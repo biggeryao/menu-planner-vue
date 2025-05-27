@@ -1,10 +1,8 @@
-<script setup>
-</script>
-
+<!-- App.vue -->
 <template>
-  <RouterView></RouterView>
+  <Layout />
 </template>
 
-<style scoped>
-
-</style>
+<script setup>
+import Layout from './components/Layout.vue'
+</script>
