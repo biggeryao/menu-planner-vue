@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE = 'https://menu-planner-dc8j.onrender.com/api'
+const BASE = 'https://menu-planner-dc8j.onrender.com/api/dishes'
 
 const apiClient = axios.create({
     baseURL: BASE,
