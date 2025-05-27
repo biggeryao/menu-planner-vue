@@ -34,7 +34,7 @@
 <script setup>
 import {ref, watch} from 'vue'
 import {batchAddDishes} from '../api'  // 假设你有批量添加接口
-import {ElMessage} from 'element-plus'
+import {ElMessage, ElMessageBox} from 'element-plus'
 
 const props = defineProps({
   visible: Boolean
@@ -62,7 +62,6 @@ const submit = async () => {
     return
   }
 
-  // 拆分菜名
   const nameList = names.value
       .split(',')
       .map(n => n.trim())
@@ -73,15 +72,36 @@ const submit = async () => {
     return
   }
 
-  const dishes = nameList.map(name => ({name, type: type.value}))
+  const dishes = nameList.map(name => ({ name, type: type.value }))
 
   try {
-    await batchAddDishes(dishes)
+    const res = await batchAddDishes({ dishes, force: false })
+
+    // 检查是否有重复
+    if (res.existing && res.existing.length > 0) {
+      const confirm = await ElMessageBox.confirm(
+          `以下菜品已存在：${res.existing.join('，')}，是否跳过它们并继续添加其他菜？`,
+          '提示',
+          {
+            confirmButtonText: '是的，跳过已存在的',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+      )
+
+      if (confirm) {
+        // 用户确认后，继续添加剩余菜品
+        await batchAddDishes({ dishes: res.toAdd, force: true })
+      }
+    }
+
     ElMessage.success('批量添加成功')
     emit('update:visible', false)
     emit('refresh')
   } catch (err) {
-    ElMessage.error('添加失败，请稍后重试')
+    if (err !== 'cancel') {
+      ElMessage.error(err.message || '添加失败，请稍后重试')
+    }
   }
 }
 
