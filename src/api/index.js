@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const BASE = 'https://menu-planner-dc8j.onrender.com/api/dishes'
+const BASE = 'https://menu-planner-dc8j.onrender.com/api'
+
 
 const apiClient = axios.create({
     baseURL: BASE,
@@ -10,25 +11,25 @@ const apiClient = axios.create({
 
 /** 获取所有菜品 */
 export const getDishes = async () => {
-    const res = await apiClient.get('/')
+    const res = await apiClient.get('/dishes/')
     return res.data
 }
 
 /** 添加单个菜品 */
 export const addDish = async (dish) => {
-    const res = await apiClient.post('/', dish)
+    const res = await apiClient.post('/dishes/', dish)
     return res.data
 }
 
 /** 批量添加菜品 */
 export const batchAddDishes = async (payload) => {
-    const res = await apiClient.post('/batch', payload)
+    const res = await apiClient.post('/dishes/batch', payload)
     return res.data
 }
 
 /** 删除单个菜品 */
 export const deleteDishById = async (id) => {
-    const res = await apiClient.delete(`/${id}`)
+    const res = await apiClient.delete(`/dishes/${id}`)
     return res.data
 }
 
@@ -41,7 +42,7 @@ export const batchDeleteDishes = async (ids) => {
         throw new Error('请提供要删除的 ID 数组')
     }
     // axios.delete 需要把 body 放在 config.data
-    const res = await apiClient.delete('/batch', {
+    const res = await apiClient.delete('/dishes/batch', {
         data: { ids }
     })
     return res.data
@@ -52,5 +53,12 @@ export const generateMenu = async (days = 1) => {
     const res = await apiClient.get('/generate', {
         params: { days }
     })
+    return res.data
+}
+export const confirmSelections = async (ids) => {
+    if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error('请提供要确认的菜品 ID 数组')
+    }
+    const res = await apiClient.post('/dishes/confirm', { ids })
     return res.data
 }
