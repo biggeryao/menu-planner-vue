@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE = 'http://localhost:3000/api'
+const BASE = 'https://menu-planner-dc8j.onrender.com/api'
 
 export const getDishes = async () => {
     const res = await axios.get(`${BASE}/dishes`)
