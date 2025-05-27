@@ -1,13 +1,16 @@
 <template>
   <el-card v-loading="loading" shadow="hover">
     <div class="flex justify-between items-center mb-4">
-      <el-button type="primary" @click="showForm = true">添加菜品</el-button>
-      <el-button type="danger" @click="confirmBatchDelete" :disabled="!multipleSelection.length">批量删除</el-button>
+      <div>
+        <el-button type="primary" @click="showForm = true">添加菜品</el-button>
+        <el-button type="danger" @click="confirmBatchDelete" :disabled="multipleSelection.length === 0">批量删除
+        </el-button>
+      </div>
       <el-input
           v-model="searchInput"
           placeholder="请输入菜名搜索"
           clearable
-          style="width: 300px;"
+          style="width: 300px;margin-top: 15px;"
       />
     </div>
 
@@ -15,13 +18,14 @@
       <el-tab-pane :label="`🥩 荤菜 (${filteredMeat.length})`" name="meat">
         <el-table
             :data="filteredMeat"
-            height="400"
+            height="630"
             size="small"
             empty-text="暂无荤菜"
             @selection-change="handleSelectionChange"
-            ref="meatTable"
+            ref="meatTableRef"
             :row-key="row => row._id"
             style="width: 100%"
+            :default-sort="{ prop: 'count', order: 'ascending' }"
         >
           <el-table-column type="selection" width="55"/>
           <el-table-column prop="name" label="菜名">
@@ -29,14 +33,12 @@
               <span v-html="highlight(row.name)"></span>
             </template>
           </el-table-column>
+          <el-table-column prop="count" label="安排次数" sortable
+                           :sort-method="(a, b) => b.count - a.count"
+          />
           <el-table-column label="操作">
             <template #default="{ row }">
-              <el-button
-                  type="danger"
-                  size="small"
-                  @click="confirmDelete(row._id)"
-              >删除
-              </el-button>
+              <el-button type="danger" size="small" @click="confirmDelete(row._id)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -45,13 +47,14 @@
       <el-tab-pane :label="`🥬 素菜 (${filteredVegetable.length})`" name="vegetable">
         <el-table
             :data="filteredVegetable"
-            height="400"
+            height="630"
             size="small"
             empty-text="暂无素菜"
             @selection-change="handleSelectionChange"
-            ref="vegetableTable"
+            ref="vegetableTableRef"
             :row-key="row => row._id"
             style="width: 100%"
+            :default-sort="{ prop: 'count', order: 'ascending' }"
         >
           <el-table-column type="selection" width="55"/>
           <el-table-column prop="name" label="菜名">
@@ -59,14 +62,12 @@
               <span v-html="highlight(row.name)"></span>
             </template>
           </el-table-column>
+          <el-table-column prop="count" label="安排次数" sortable
+                           :sort-method="(a, b) => b.count - a.count"
+          />
           <el-table-column label="操作">
             <template #default="{ row }">
-              <el-button
-                  type="danger"
-                  size="small"
-                  @click="confirmDelete(row._id)"
-              >删除
-              </el-button>
+              <el-button type="danger" size="small" @click="confirmDelete(row._id)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -75,13 +76,14 @@
       <el-tab-pane :label="`🍲 汤类 (${filteredSoup.length})`" name="soup">
         <el-table
             :data="filteredSoup"
-            height="400"
+            height="630"
             size="small"
             empty-text="暂无汤类"
             @selection-change="handleSelectionChange"
-            ref="soupTable"
+            ref="soupTableRef"
             :row-key="row => row._id"
             style="width: 100%"
+            :default-sort="{ prop: 'count', order: 'ascending' }"
         >
           <el-table-column type="selection" width="55"/>
           <el-table-column prop="name" label="菜名">
@@ -89,14 +91,12 @@
               <span v-html="highlight(row.name)"></span>
             </template>
           </el-table-column>
+          <el-table-column prop="count" label="安排次数" sortable
+                           :sort-method="(a, b) => b.count - a.count"
+          />
           <el-table-column label="操作">
             <template #default="{ row }">
-              <el-button
-                  type="danger"
-                  size="small"
-                  @click="confirmDelete(row._id)"
-              >删除
-              </el-button>
+              <el-button type="danger" size="small" @click="confirmDelete(row._id)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -122,6 +122,11 @@ const searchInput = ref('')
 const searchKeyword = ref('')
 const multipleSelection = ref([])
 
+// 表格 refs
+const meatTableRef = ref(null)
+const vegetableTableRef = ref(null)
+const soupTableRef = ref(null)
+
 // 防抖更新关键字
 const updateKeyword = debounce(val => {
   searchKeyword.value = val.trim().toLowerCase()
@@ -132,9 +137,7 @@ const fetchDishes = async () => {
   loading.value = true
   try {
     dishes.value = await getDishes()
-    // 清空多选
-    multipleSelection.value = []
-    resetSelection()
+    clearSelections()
   } catch (err) {
     ElMessage.error('获取菜品失败')
   } finally {
@@ -143,11 +146,7 @@ const fetchDishes = async () => {
 }
 
 const confirmDelete = id => {
-  ElMessageBox.confirm(
-      '确定要删除该菜品吗？',
-      '删除确认',
-      {type: 'warning'}
-  )
+  ElMessageBox.confirm('确定要删除该菜品吗？', '删除确认', {type: 'warning'})
       .then(async () => {
         try {
           await deleteDishById(id)
@@ -161,7 +160,7 @@ const confirmDelete = id => {
       })
 }
 
-const handleSelectionChange = (val) => {
+const handleSelectionChange = val => {
   multipleSelection.value = val
 }
 
@@ -185,9 +184,10 @@ const confirmBatchDelete = () => {
       })
 }
 
-const filterByType = type => {
-  return dishes.value.filter(d => d.type === type && d.name.toLowerCase().includes(searchKeyword.value))
-}
+const filterByType = type =>
+    dishes.value.filter(
+        d => d.type === type && d.name.toLowerCase().includes(searchKeyword.value)
+    )
 
 const filteredMeat = computed(() => filterByType('meat'))
 const filteredVegetable = computed(() => filterByType('vegetable'))
@@ -200,24 +200,18 @@ const highlight = name => {
   return name.replace(re, '<span class="text-red-500">$1</span>')
 }
 
-const resetSelection = () => {
-  // 清空三张表的选中项
-  ['meatTable', 'vegetableTable', 'soupTable'].forEach(refName => {
-    const table = unref(refs[refName])
-    if (table) table.clearSelection()
-  })
+const clearSelections = () => {
+  meatTableRef.value && meatTableRef.value.clearSelection()
+  vegetableTableRef.value && vegetableTableRef.value.clearSelection()
+  soupTableRef.value && soupTableRef.value.clearSelection()
 }
 
 onMounted(fetchDishes)
 </script>
 
-<style>
+<style scoped>
 .el-table__empty-text {
   text-align: center;
   color: #999;
-}
-
-.text-red-500 {
-  color: red;
 }
 </style>
